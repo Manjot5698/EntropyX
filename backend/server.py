@@ -117,6 +117,8 @@ class EntropyEngine:
         self.last_network_jitter = 0
         self.pool_updates = 0
         self.jitter_history = []
+        self.cached_jitter_entropy = None
+        self.last_jitter_time = 0
         # Endpoints for measuring real network latency
         self.ping_endpoints = [
             "https://www.google.com",
@@ -143,16 +145,28 @@ class EntropyEngine:
         noise_data = str(timing_samples) + str(id(timing_samples)) + str(os.getpid())
         return hashlib.sha256(noise_data.encode()).digest()[:16]
     
-    def get_network_jitter(self) -> bytes:
-        """Measure REAL network latency jitter by pinging external endpoints"""
+    def get_network_jitter(self, fast_mode: bool = False) -> bytes:
+        """Measure network latency jitter. In fast_mode, use cached values + timing entropy."""
         import time
         
+        current_time = time.time()
+        
+        # In fast mode or if we have recent jitter data (< 5 seconds), use cached + timing entropy
+        if fast_mode or (self.cached_jitter_entropy and current_time - self.last_jitter_time < 5):
+            # Use cached jitter mixed with fresh timing entropy
+            timing_noise = str(time.perf_counter_ns()) + str(secrets.randbits(64))
+            if self.cached_jitter_entropy:
+                mixed = self.cached_jitter_entropy + timing_noise.encode()
+            else:
+                mixed = timing_noise.encode() + os.urandom(8)
+            return hashlib.sha256(mixed).digest()[:16]
+        
+        # Full network jitter measurement
         jitter_samples = []
         
         for endpoint in self.ping_endpoints:
             try:
                 start = time.perf_counter_ns()
-                # Use synchronous request for accurate timing
                 import urllib.request
                 req = urllib.request.Request(endpoint, method='HEAD')
                 req.add_header('User-Agent', 'EntropyX/1.0')
@@ -161,24 +175,28 @@ class EntropyEngine:
                 latency_ns = end - start
                 jitter_samples.append(latency_ns)
             except Exception:
-                # On failure, use high-precision timestamp as fallback
                 jitter_samples.append(time.perf_counter_ns())
         
         # Calculate jitter (variance in latencies)
         if len(jitter_samples) > 1:
             avg = sum(jitter_samples) / len(jitter_samples)
             jitter = sum(abs(s - avg) for s in jitter_samples) / len(jitter_samples)
-            self.last_network_jitter = jitter / 1_000_000  # Convert to ms
+            self.last_network_jitter = jitter / 1_000_000
         else:
             self.last_network_jitter = 0
         
-        # Store history for variance-based entropy
+        # Store history and cache
         self.jitter_history.extend(jitter_samples)
-        self.jitter_history = self.jitter_history[-100:]  # Keep last 100 samples
+        self.jitter_history = self.jitter_history[-100:]
         
-        # Hash all samples for entropy
         jitter_data = str(jitter_samples) + str(time.perf_counter_ns())
-        return hashlib.sha256(jitter_data.encode()).digest()[:16]
+        result = hashlib.sha256(jitter_data.encode()).digest()[:16]
+        
+        # Cache the result
+        self.cached_jitter_entropy = result
+        self.last_jitter_time = current_time
+        
+        return result
     
     def get_timestamp_entropy(self) -> bytes:
         """Generate entropy from high-precision nanosecond timestamps"""
@@ -213,11 +231,11 @@ class EntropyEngine:
         # Fallback to system timing noise
         return self.get_camera_noise()
     
-    def mix_entropy_pool(self, last_hash: Optional[str] = None, camera_entropy: Optional[str] = None) -> tuple:
+    def mix_entropy_pool(self, last_hash: Optional[str] = None, camera_entropy: Optional[str] = None, fast_mode: bool = False) -> tuple:
         """Mix all entropy sources into the pool"""
         # Use real browser camera entropy if provided, otherwise use timing noise
         camera = self.mix_camera_entropy(camera_entropy)
-        network = self.get_network_jitter()
+        network = self.get_network_jitter(fast_mode=fast_mode)
         timestamp = self.get_timestamp_entropy()
         system = self.get_system_entropy()
         feedback = self.get_historical_feedback(last_hash)
@@ -238,9 +256,9 @@ class EntropyEngine:
         
         return self.entropy_pool, sources
     
-    def generate_secure_random(self, last_hash: Optional[str] = None, camera_entropy: Optional[str] = None) -> tuple:
+    def generate_secure_random(self, last_hash: Optional[str] = None, camera_entropy: Optional[str] = None, fast_mode: bool = False) -> tuple:
         """Generate a secure random value using SHA-256"""
-        pool, sources = self.mix_entropy_pool(last_hash, camera_entropy)
+        pool, sources = self.mix_entropy_pool(last_hash, camera_entropy, fast_mode)
         final_hash = hashlib.sha256(pool).hexdigest()
         random_int = int(final_hash, 16)
         
@@ -612,46 +630,55 @@ async def select_validator(
 
 @api_router.post("/simulate-rounds")
 async def simulate_rounds(session_id: str = Query(...), rounds: int = Query(default=100, ge=1, le=1000)):
-    """Simulate multiple selection rounds"""
+    """Simulate multiple selection rounds (uses fast mode for batch processing)"""
     results = []
     
-    for _ in range(rounds):
-        # Get active validators
-        validators = await db.validators.find(
-            {"session_id": session_id, "status": "active"},
-            {"_id": 0}
-        ).to_list(100)
-        
-        if not validators:
-            break
-        
-        # Get last selection
-        last_selection = await db.selections.find_one(
-            {"session_id": session_id},
-            {"_id": 0},
-            sort=[("round_id", -1)]
+    # Get validators once at the start
+    validators = await db.validators.find(
+        {"session_id": session_id, "status": "active"},
+        {"_id": 0}
+    ).to_list(100)
+    
+    if not validators:
+        raise HTTPException(status_code=400, detail="No active validators")
+    
+    # Get initial last hash
+    last_selection = await db.selections.find_one(
+        {"session_id": session_id},
+        {"_id": 0},
+        sort=[("round_id", -1)]
+    )
+    last_hash = last_selection["entropy_hash"] if last_selection else None
+    
+    # Get starting round count
+    round_count = await db.selections.count_documents({"session_id": session_id})
+    
+    # Pre-calculate weights
+    total_weight = sum(v["weight"] for v in validators)
+    
+    # Batch insert documents
+    batch_docs = []
+    
+    for i in range(rounds):
+        # Generate selection using FAST MODE (cached network jitter + timing entropy)
+        entropy_hash, random_int, sources, confidence = entropy_engine.generate_secure_random(
+            last_hash, 
+            None,  # No camera entropy in batch mode
+            fast_mode=True  # Use fast mode!
         )
         
-        last_hash = last_selection["entropy_hash"] if last_selection else None
-        
-        # Generate selection
-        entropy_hash, random_int, sources, confidence = entropy_engine.generate_secure_random(last_hash)
-        
         # Weighted selection
-        total_weight = sum(v["weight"] for v in validators)
         selection_value = (random_int % 10000) / 10000
         cumsum = 0
         selected_idx = 0
-        for i, v in enumerate(validators):
+        for idx, v in enumerate(validators):
             cumsum += v["weight"] / total_weight
             if selection_value <= cumsum:
-                selected_idx = i
+                selected_idx = idx
                 break
         
         selected_validator = validators[selected_idx]
-        
-        round_count = await db.selections.count_documents({"session_id": session_id})
-        round_id = round_count + 1
+        round_id = round_count + i + 1
         
         selection_doc = {
             "selection_id": f"sel_{uuid.uuid4().hex[:12]}",
@@ -665,12 +692,8 @@ async def simulate_rounds(session_id: str = Query(...), rounds: int = Query(defa
             "session_id": session_id
         }
         
-        await db.selections.insert_one(selection_doc)
-        
-        await db.validators.update_one(
-            {"validator_id": selected_validator["validator_id"]},
-            {"$set": {"last_selected_at": datetime.now(timezone.utc).isoformat()}}
-        )
+        batch_docs.append(selection_doc)
+        last_hash = entropy_hash  # Feed back for next round
         
         results.append({
             "round_id": round_id,
@@ -678,6 +701,18 @@ async def simulate_rounds(session_id: str = Query(...), rounds: int = Query(defa
             "entropy_hash": entropy_hash[:16],
             "confidence": round(confidence, 2)
         })
+    
+    # Bulk insert all documents
+    if batch_docs:
+        await db.selections.insert_many(batch_docs)
+        
+        # Update last_selected_at for all validators that were selected
+        selected_validator_ids = set(doc["validator_id"] for doc in batch_docs)
+        for vid in selected_validator_ids:
+            await db.validators.update_one(
+                {"validator_id": vid},
+                {"$set": {"last_selected_at": datetime.now(timezone.utc).isoformat()}}
+            )
     
     return {"rounds_completed": len(results), "results": results}
 
