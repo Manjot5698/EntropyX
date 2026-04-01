@@ -79,11 +79,11 @@ const Landing = () => {
               </span>
             </div>
             <Button
-              onClick={login}
-              data-testid="header-login-btn"
+              onClick={() => navigate('/dashboard')}
+              data-testid="header-launch-btn"
               className="bg-[#00F0FF] text-black font-semibold px-6 hover:bg-[#00F0FF]/80 transition-colors rounded-none"
             >
-              Sign In
+              Launch App
             </Button>
           </div>
         </div>
@@ -117,19 +117,19 @@ const Landing = () => {
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Button
-                onClick={login}
+                onClick={() => navigate('/dashboard')}
                 data-testid="hero-get-started-btn"
                 className="bg-[#00F0FF] text-black font-semibold px-8 py-6 text-lg hover:bg-[#00F0FF]/80 transition-colors rounded-none flex items-center gap-2"
               >
-                Get Started <ArrowRight size={20} />
+                Launch Dashboard <ArrowRight size={20} />
               </Button>
               <Button
-                onClick={() => navigate('/dashboard')}
-                data-testid="hero-demo-btn"
+                onClick={login}
+                data-testid="hero-signin-btn"
                 variant="outline"
                 className="bg-transparent border border-[#1E2028] text-white px-8 py-6 text-lg hover:bg-[#1A1C23] transition-colors rounded-none"
               >
-                Try Demo
+                Sign In with Google
               </Button>
             </div>
           </div>
