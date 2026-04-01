@@ -103,6 +103,10 @@ class UserSession(BaseModel):
     expires_at: str
     created_at: str
 
+class SelectionRequest(BaseModel):
+    camera_entropy: Optional[str] = None  # Hex string from browser camera
+    noise_level: Optional[float] = None
+
 # ==================== ENTROPY ENGINE ====================
 
 class EntropyEngine:
@@ -199,9 +203,20 @@ class EntropyEngine:
             return hashlib.sha256(last_hash.encode()).digest()[:8]
         return secrets.token_bytes(8)
     
-    def mix_entropy_pool(self, last_hash: Optional[str] = None) -> tuple:
+    def mix_camera_entropy(self, camera_hex: Optional[str] = None) -> bytes:
+        """Mix real camera entropy from browser if provided"""
+        if camera_hex and len(camera_hex) >= 32:
+            try:
+                return bytes.fromhex(camera_hex[:32])
+            except ValueError:
+                pass
+        # Fallback to system timing noise
+        return self.get_camera_noise()
+    
+    def mix_entropy_pool(self, last_hash: Optional[str] = None, camera_entropy: Optional[str] = None) -> tuple:
         """Mix all entropy sources into the pool"""
-        camera = self.get_camera_noise()
+        # Use real browser camera entropy if provided, otherwise use timing noise
+        camera = self.mix_camera_entropy(camera_entropy)
         network = self.get_network_jitter()
         timestamp = self.get_timestamp_entropy()
         system = self.get_system_entropy()
@@ -214,6 +229,7 @@ class EntropyEngine:
         
         sources = {
             "camera_noise": camera.hex()[:16],
+            "camera_source": "browser" if camera_entropy else "system",
             "network_jitter": network.hex()[:16],
             "timestamp": timestamp.hex()[:16],
             "system": system.hex()[:16],
@@ -222,9 +238,9 @@ class EntropyEngine:
         
         return self.entropy_pool, sources
     
-    def generate_secure_random(self, last_hash: Optional[str] = None) -> tuple:
+    def generate_secure_random(self, last_hash: Optional[str] = None, camera_entropy: Optional[str] = None) -> tuple:
         """Generate a secure random value using SHA-256"""
-        pool, sources = self.mix_entropy_pool(last_hash)
+        pool, sources = self.mix_entropy_pool(last_hash, camera_entropy)
         final_hash = hashlib.sha256(pool).hexdigest()
         random_int = int(final_hash, 16)
         
@@ -507,8 +523,20 @@ async def update_validator(validator_id: str, update: ValidatorUpdate, session_i
 # ==================== SELECTION ENDPOINTS ====================
 
 @api_router.post("/select-validator")
-async def select_validator(session_id: str = Query(...)):
+async def select_validator(
+    session_id: str = Query(...),
+    request: Request = None
+):
     """Select a random validator using entropy"""
+    # Parse optional camera entropy from request body
+    camera_entropy = None
+    try:
+        if request and request.headers.get("content-type") == "application/json":
+            body = await request.json()
+            camera_entropy = body.get("camera_entropy")
+    except Exception:
+        pass
+    
     # Get active validators
     validators = await db.validators.find(
         {"session_id": session_id, "status": "active"},
@@ -527,8 +555,11 @@ async def select_validator(session_id: str = Query(...)):
     
     last_hash = last_selection["entropy_hash"] if last_selection else None
     
-    # Generate secure random
-    entropy_hash, random_int, sources, confidence = entropy_engine.generate_secure_random(last_hash)
+    # Generate secure random with real camera entropy if provided
+    entropy_hash, random_int, sources, confidence = entropy_engine.generate_secure_random(
+        last_hash, 
+        camera_entropy
+    )
     
     # Apply weighted selection
     total_weight = sum(v["weight"] for v in validators)

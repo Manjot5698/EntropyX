@@ -40,7 +40,10 @@ import {
   ArrowClockwise,
   Gear,
   CaretDown,
+  VideoCamera,
+  VideoCameraSlash,
 } from "@phosphor-icons/react";
+import useCameraEntropy from "../hooks/useCameraEntropy";
 import {
   BarChart,
   Bar,
@@ -59,6 +62,16 @@ const Dashboard = () => {
   const { user, loading: authLoading, login, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Camera entropy hook
+  const { 
+    isActive: cameraActive, 
+    hasPermission: cameraPermission,
+    noiseLevel: cameraNoiseLevel,
+    startCamera, 
+    stopCamera, 
+    getEntropy: getCameraEntropy 
+  } = useCameraEntropy();
 
   // State
   const [sessionId, setSessionId] = useState(null);
@@ -161,8 +174,13 @@ const Dashboard = () => {
     setIsSelecting(true);
 
     try {
+      // Get camera entropy if camera is active
+      const cameraEntropy = getCameraEntropy();
+      
       const response = await axios.post(
-        `${API}/select-validator?session_id=${sessionId}`
+        `${API}/select-validator?session_id=${sessionId}`,
+        cameraEntropy ? { camera_entropy: cameraEntropy.camera_entropy } : {},
+        { headers: { 'Content-Type': 'application/json' } }
       );
       setSelectedValidator(response.data);
       toast.success(`Selected: ${response.data.validator_name}`);
@@ -571,6 +589,12 @@ const Dashboard = () => {
                   <div className="font-mono text-xs text-[#52525B] break-all" data-testid="entropy-hash">
                     {selectedValidator.entropy_hash}
                   </div>
+                  {selectedValidator.entropy_sources?.camera_source === "browser" && (
+                    <div className="mt-2 flex items-center gap-1 text-xs text-[#00FF41]">
+                      <VideoCamera size={12} />
+                      <span>Using your camera</span>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
@@ -588,21 +612,36 @@ const Dashboard = () => {
             </h4>
             {entropyStatus && (
               <div className="space-y-3">
+                {/* Camera Entropy - with browser toggle */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-sm text-[#A1A1AA]">
-                    <Camera size={16} />
+                    {cameraActive ? (
+                      <VideoCamera size={16} className="text-[#00FF41]" />
+                    ) : (
+                      <Camera size={16} />
+                    )}
                     <span>Camera Noise</span>
                   </div>
-                  <span
-                    className={`font-mono text-xs px-2 py-0.5 ${
-                      entropyStatus.camera_noise_status === "active"
-                        ? "badge-success"
-                        : "badge-warning"
-                    }`}
-                    data-testid="camera-status"
-                  >
-                    {entropyStatus.camera_noise_status.toUpperCase()}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {cameraActive && (
+                      <span className="font-mono text-xs text-[#52525B]">
+                        {cameraNoiseLevel.toFixed(0)}%
+                      </span>
+                    )}
+                    <button
+                      onClick={cameraActive ? stopCamera : startCamera}
+                      data-testid="camera-toggle-btn"
+                      className={`font-mono text-xs px-2 py-0.5 cursor-pointer transition-colors ${
+                        cameraActive
+                          ? "badge-success hover:bg-[#00FF41]/20"
+                          : cameraPermission === false
+                          ? "badge-warning"
+                          : "badge-info hover:bg-[#00F0FF]/20"
+                      }`}
+                    >
+                      {cameraActive ? "LIVE" : cameraPermission === false ? "DENIED" : "ENABLE"}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between">
