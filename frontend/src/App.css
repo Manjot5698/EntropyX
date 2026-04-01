@@ -1,34 +1,188 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+/* EntropyX Dashboard Styles */
+
+/* Global app styles */
+.App {
+  min-height: 100vh;
+  background-color: #050505;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+/* Responsive utilities */
+@media (max-width: 640px) {
+  .hide-mobile {
+    display: none;
+  }
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+/* Chart tooltip customization */
+.recharts-tooltip-wrapper {
+  z-index: 100;
 }
 
-.App-link {
-    color: #61dafb;
+/* Custom animations for dashboard */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Selection highlight animation */
+@keyframes highlight {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 240, 255, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(0, 240, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 240, 255, 0);
+  }
+}
+
+.animate-highlight {
+  animation: highlight 1s ease-out;
+}
+
+/* Simulation overlay background pattern */
+.simulation-bg {
+  background-image: 
+    linear-gradient(rgba(0, 255, 65, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 65, 0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Button focus states */
+button:focus-visible {
+  outline: 2px solid #00F0FF;
+  outline-offset: 2px;
+}
+
+/* Input focus states */
+input:focus {
+  outline: none;
+  border-color: #00F0FF;
+}
+
+/* Table row hover */
+tbody tr:hover {
+  background-color: rgba(26, 28, 35, 0.5);
+}
+
+/* Progress bar customization */
+.progress-bar {
+  background: linear-gradient(90deg, #00F0FF, #00FF41);
+}
+
+/* Scrollbar for scroll areas */
+.scroll-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scroll-area::-webkit-scrollbar-thumb {
+  background: #1E2028;
+  border-radius: 3px;
+}
+
+.scroll-area::-webkit-scrollbar-thumb:hover {
+  background: #2A2C35;
+}
+
+/* Card transitions */
+.card-transition {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Glow effects for active states */
+.active-glow {
+  box-shadow: 
+    0 0 0 1px rgba(0, 240, 255, 0.5),
+    0 0 15px rgba(0, 240, 255, 0.15);
+}
+
+/* Terminal button glow */
+.terminal-glow {
+  box-shadow: 0 0 10px rgba(0, 255, 65, 0.2);
+}
+
+/* Badge shadows */
+.badge-glow-success {
+  box-shadow: 0 0 8px rgba(0, 255, 65, 0.2);
+}
+
+.badge-glow-info {
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.2);
+}
+
+/* Loading spinner */
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Header glass effect */
+.header-glass {
+  background: rgba(5, 5, 5, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Validator card selected state */
+.validator-selected {
+  border-color: rgba(0, 240, 255, 0.5);
+  background-color: rgba(10, 11, 16, 1);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.15);
+}
+
+/* Chart grid lines */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: #1E2028;
+  stroke-opacity: 0.5;
+}
+
+/* Tooltip styles */
+.recharts-tooltip-cursor {
+  fill: rgba(0, 240, 255, 0.05);
+}
+
+/* Pie chart label */
+.recharts-pie-label-text {
+  fill: #A1A1AA;
+  font-size: 10px;
+}
+
+/* Number counter animation */
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.count-animation {
+  animation: countUp 0.3s ease-out;
 }
