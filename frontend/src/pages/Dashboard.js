@@ -631,18 +631,24 @@ const Dashboard = () => {
                     <button
                       onClick={cameraActive ? stopCamera : startCamera}
                       data-testid="camera-toggle-btn"
+                      title={cameraPermission === false ? "Camera not available or permission denied" : "Click to enable camera entropy"}
                       className={`font-mono text-xs px-2 py-0.5 cursor-pointer transition-colors ${
                         cameraActive
                           ? "badge-success hover:bg-[#00FF41]/20"
                           : cameraPermission === false
-                          ? "badge-warning"
+                          ? "badge-warning cursor-not-allowed"
                           : "badge-info hover:bg-[#00F0FF]/20"
                       }`}
                     >
-                      {cameraActive ? "LIVE" : cameraPermission === false ? "DENIED" : "ENABLE"}
+                      {cameraActive ? "LIVE" : cameraPermission === false ? "N/A" : "ENABLE"}
                     </button>
                   </div>
                 </div>
+                {cameraPermission === false && (
+                  <div className="text-xs text-[#FF3B30] pl-6 -mt-1">
+                    Camera unavailable - using system entropy
+                  </div>
+                )}
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-sm text-[#A1A1AA]">
