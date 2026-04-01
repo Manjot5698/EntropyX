@@ -266,6 +266,16 @@ body {
     background: rgba(5, 5, 5, 0.9);
 }
 
+/* Hide platform branding */
+[data-testid="emergent-badge"],
+.emergent-badge,
+[class*="emergent-badge"],
+a[href*="emergent.sh"],
+div[style*="Made with"] {
+  display: none !important;
+  visibility: hidden !important;
+}
+
 /* Tailwind layer overrides */
 @layer base {
     :root {
