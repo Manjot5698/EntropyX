@@ -610,16 +610,23 @@ const Dashboard = () => {
                     <WifiHigh size={16} />
                     <span>Network Jitter</span>
                   </div>
-                  <span
-                    className={`font-mono text-xs px-2 py-0.5 ${
-                      entropyStatus.network_jitter_status === "active"
-                        ? "badge-success"
-                        : "badge-warning"
-                    }`}
-                    data-testid="network-status"
-                  >
-                    {entropyStatus.network_jitter_status.toUpperCase()}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs text-[#52525B]">
+                      {entropyStatus.network_jitter_ms?.toFixed(1) || 0}ms
+                    </span>
+                    <span
+                      className={`font-mono text-xs px-2 py-0.5 ${
+                        entropyStatus.network_jitter_status === "active"
+                          ? "badge-success"
+                          : entropyStatus.network_jitter_status === "initializing"
+                          ? "badge-info"
+                          : "badge-warning"
+                      }`}
+                      data-testid="network-status"
+                    >
+                      {entropyStatus.network_jitter_status?.toUpperCase()}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between">
