@@ -1,0 +1,118 @@
+{
+  "project_name": "EntropyX",
+  "theme": "dark",
+  "archetype": "7 - Electric & Neon (adapted for Professional Cybersecurity)",
+  "design_philosophy": "Grounded Black-on-Black layers with high-contrast, glowing neon accents for data visualization. A 'Control Room' dashboard prioritizing real-time analytics, unpredictability, and security. Breaks the standard SaaS mold by using terminal-like layouts and sharp, tactical aesthetics.",
+  "colors": {
+    "background": "#050505",
+    "surface": "#0A0B10",
+    "surface_hover": "#1A1C23",
+    "border_default": "#1E2028",
+    "border_active": "rgba(0, 240, 255, 0.5)",
+    "text_primary": "#FFFFFF",
+    "text_secondary": "#A1A1AA",
+    "text_muted": "#52525B",
+    "brand_primary": "#00F0FF",
+    "brand_success": "#00FF41",
+    "brand_warning": "#FF3B30"
+  },
+  "typography": {
+    "headings": {
+      "family": "IBM Plex Sans, sans-serif",
+      "weights": ["400", "600"],
+      "tracking": "tracking-tight",
+      "instruction": "Do not use Inter, Roboto, or Space Grotesk for headings."
+    },
+    "body": {
+      "family": "Inter, sans-serif",
+      "weights": ["400", "500"]
+    },
+    "mono": {
+      "family": "JetBrains Mono, monospace",
+      "weights": ["400", "500"],
+      "usage": "Use extensively for entropy hashes, timestamps, active validator IDs, terminal logs, and data values."
+    },
+    "hierarchy": {
+      "h1": "text-4xl md:text-5xl font-semibold tracking-tighter text-white",
+      "h2": "text-2xl md:text-3xl font-semibold tracking-tight text-white",
+      "h3": "text-xl font-medium tracking-tight text-white",
+      "h4": "text-sm uppercase tracking-[0.2em] font-semibold text-[#00F0FF]",
+      "body": "text-base text-[#A1A1AA] leading-relaxed",
+      "small": "text-sm text-[#52525B]",
+      "data_value": "font-mono text-2xl text-white",
+      "data_label": "text-xs uppercase tracking-widest text-[#A1A1AA]"
+    }
+  },
+  "spacing_and_layout": {
+    "philosophy": "Mode B: The 'Control Room' Grid. Dense, strict hierarchy, no wasted space. High utilization of grid-cols and tight gaps.",
+    "container": "max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8",
+    "grid": {
+      "base": "grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6",
+      "bento_span": {
+        "summary": "col-span-1",
+        "primary_chart": "col-span-1 md:col-span-2 lg:col-span-3 row-span-2",
+        "feed": "col-span-1 row-span-2"
+      }
+    },
+    "padding": {
+      "card": "p-6",
+      "section": "py-8 md:py-12"
+    }
+  },
+  "components": {
+    "cards": {
+      "base": "bg-[#0A0B10] border border-[#1E2028] rounded-none md:rounded-lg",
+      "interactive": "hover:bg-[#1A1C23] hover:border-white/20 transition-all duration-200 cursor-pointer",
+      "active": "border-[#00F0FF]/50 bg-[#0A0B10] shadow-[0_0_15px_rgba(0,240,255,0.15)] relative overflow-hidden"
+    },
+    "buttons": {
+      "primary": "bg-[#00F0FF] text-black font-semibold rounded-none px-6 py-2 hover:bg-[#00F0FF]/80 transition-colors",
+      "secondary": "bg-transparent border border-[#1E2028] text-white rounded-none px-6 py-2 hover:bg-[#1A1C23] transition-colors",
+      "terminal": "bg-[#050505] border border-[#00FF41]/30 text-[#00FF41] font-mono px-4 py-2 uppercase text-xs hover:bg-[#00FF41]/10 transition-colors shadow-[0_0_10px_rgba(0,255,65,0.2)]"
+    },
+    "header": {
+      "style": "sticky top-0 z-50 bg-[#050505]/80 backdrop-blur-xl border-b border-[#1E2028]",
+      "nav_links": "text-sm font-medium text-[#A1A1AA] hover:text-white transition-colors"
+    },
+    "charts": {
+      "library": "recharts",
+      "colors": ["#00F0FF", "#00FF41", "#1E2028", "#52525B"],
+      "style": "Dark background with neon data lines, minimal grid lines (stroke-opacity 0.1)."
+    },
+    "badges": {
+      "success": "bg-[#00FF41]/10 text-[#00FF41] border border-[#00FF41]/20 font-mono text-xs px-2 py-0.5",
+      "warning": "bg-[#FF3B30]/10 text-[#FF3B30] border border-[#FF3B30]/20 font-mono text-xs px-2 py-0.5",
+      "info": "bg-[#00F0FF]/10 text-[#00F0FF] border border-[#00F0FF]/20 font-mono text-xs px-2 py-0.5",
+      "inactive": "bg-[#1E2028]/50 text-[#52525B] border border-[#1E2028] font-mono text-xs px-2 py-0.5"
+    }
+  },
+  "visual_enhancers": {
+    "borders": "1px sharp borders. Avoid overly rounded corners. Limit border-radius to 8px max.",
+    "effects": {
+      "tracing_beam": "Active validator cards should use a vibrant border color (#00F0FF) to signify the 'live' node.",
+      "glow": "Use subtle drop-shadows on primary accents (Cyan/Green) to mimic LED monitors.",
+      "scanlines": "For the live simulation mode overlay, apply a subtle CSS repeating-linear-gradient overlay to mimic a CRT monitor."
+    }
+  },
+  "animation_and_motion": {
+    "data_stream": "Use marquee or Framer Motion to animate a continuous vertical/horizontal stream of entropy hex hashes.",
+    "hover": "Instant or fast transitions (150ms). Tech shouldn't feel laggy or overly bouncy.",
+    "simulation_mode": "When '1000-Round fairness simulation' is triggered, display a cinematic overlay with fast-updating numbers, simulating intense computational hashing."
+  },
+  "media_urls": {
+    "backgrounds": {
+      "cyber_landscape": "https://images.pexels.com/photos/30547584/pexels-photo-30547584.jpeg"
+    },
+    "overlays": {
+      "terminal_data": "https://images.pexels.com/photos/207580/pexels-photo-207580.jpeg"
+    }
+  },
+  "icons": {
+    "library": "@phosphor-icons/react",
+    "style": "Use Phosphor Icons (Regular or Duotone weight) for a technical yet polished look.",
+    "install_command": "yarn add @phosphor-icons/react"
+  },
+  "testing": {
+    "requirements": "All interactive and key informational elements MUST include a data-testid attribute in kebab-case."
+  }
+}
