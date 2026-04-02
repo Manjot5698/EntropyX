@@ -459,8 +459,8 @@ async def create_session(request: Request):
         {"name": "Validator-Alpha", "weight": 1.0},
         {"name": "Validator-Beta", "weight": 1.0},
         {"name": "Validator-Gamma", "weight": 1.0},
-        {"name": "Validator-Delta", "weight": 0.8},
-        {"name": "Validator-Epsilon", "weight": 1.2},
+        {"name": "Validator-Delta", "weight": 1.0},
+        {"name": "Validator-Epsilon", "weight": 1.0},
     ]
     
     for v in default_validators:
