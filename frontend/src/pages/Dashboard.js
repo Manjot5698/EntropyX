@@ -59,7 +59,7 @@ import {
 } from "recharts";
 
 const Dashboard = () => {
-  const { user, loading: authLoading, login, logout } = useAuth();
+  const { user, loading: authLoading, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -367,15 +367,9 @@ const Dashboard = () => {
                       data-testid="user-menu-btn"
                       className="flex items-center gap-2 text-[#A1A1AA] hover:text-white hover:bg-[#1A1C23]"
                     >
-                      {user.picture ? (
-                        <img
-                          src={user.picture}
-                          alt={user.name}
-                          className="w-6 h-6 rounded-full"
-                        />
-                      ) : (
-                        <User size={20} />
-                      )}
+                      <div className="w-6 h-6 rounded-full bg-[#00F0FF] flex items-center justify-center text-black text-xs font-bold">
+                        {user.name?.charAt(0).toUpperCase()}
+                      </div>
                       <span className="hidden sm:inline text-sm">{user.name}</span>
                       <CaretDown size={14} />
                     </Button>
@@ -396,7 +390,7 @@ const Dashboard = () => {
                 </DropdownMenu>
               ) : (
                 <Button
-                  onClick={login}
+                  onClick={() => navigate('/')}
                   data-testid="dashboard-login-btn"
                   className="bg-[#00F0FF] text-black font-semibold px-4 hover:bg-[#00F0FF]/80 rounded-none"
                 >

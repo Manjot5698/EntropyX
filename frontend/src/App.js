@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef, createContext, useContext, useCallback } from "react";
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { useEffect, useState, createContext, useContext, useCallback } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import axios from "axios";
 import { Toaster } from "./components/ui/sonner";
 import Landing from "./pages/Landing";
@@ -26,19 +26,19 @@ const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   const checkAuth = useCallback(async () => {
-    // CRITICAL: If returning from OAuth callback, skip the /me check.
-    // AuthCallback will exchange the session_id and establish the session first.
-    if (window.location.hash?.includes('session_id=')) {
+    const token = localStorage.getItem('token');
+    if (!token) {
       setLoading(false);
       return;
     }
 
     try {
       const response = await axios.get(`${API}/auth/me`, {
-        withCredentials: true
+        headers: { Authorization: `Bearer ${token}` }
       });
       setUser(response.data);
     } catch (error) {
+      localStorage.removeItem('token');
       setUser(null);
     } finally {
       setLoading(false);
@@ -49,86 +49,34 @@ const AuthProvider = ({ children }) => {
     checkAuth();
   }, [checkAuth]);
 
-  const login = () => {
-    // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
-    const redirectUrl = window.location.origin + '/dashboard';
-    window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
+  const login = async (email, password) => {
+    const response = await axios.post(`${API}/auth/login`, { email, password });
+    localStorage.setItem('token', response.data.token);
+    setUser(response.data.user);
+    return response.data;
   };
 
-  const logout = async () => {
-    try {
-      await axios.post(`${API}/auth/logout`, {}, { withCredentials: true });
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
+  const register = async (name, email, password) => {
+    const response = await axios.post(`${API}/auth/register`, { name, email, password });
+    localStorage.setItem('token', response.data.token);
+    setUser(response.data.user);
+    return response.data;
+  };
+
+  const logout = () => {
+    localStorage.removeItem('token');
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, loading, login, logout, checkAuth }}>
+    <AuthContext.Provider value={{ user, setUser, loading, login, register, logout, checkAuth }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-// Auth Callback Component
-const AuthCallback = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { setUser } = useAuth();
-  const hasProcessed = useRef(false);
-
-  useEffect(() => {
-    if (hasProcessed.current) return;
-    hasProcessed.current = true;
-
-    const processAuth = async () => {
-      const hash = location.hash;
-      const sessionIdMatch = hash.match(/session_id=([^&]+)/);
-      
-      if (sessionIdMatch) {
-        const sessionId = sessionIdMatch[1];
-        
-        try {
-          const response = await axios.post(
-            `${API}/auth/session`,
-            { session_id: sessionId },
-            { withCredentials: true }
-          );
-          
-          setUser(response.data);
-          navigate('/dashboard', { replace: true, state: { user: response.data } });
-        } catch (error) {
-          console.error("Auth callback error:", error);
-          navigate('/', { replace: true });
-        }
-      } else {
-        navigate('/', { replace: true });
-      }
-    };
-
-    processAuth();
-  }, [location, navigate, setUser]);
-
-  return (
-    <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-      <div className="text-center">
-        <div className="w-12 h-12 border-2 border-[#00F0FF] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <p className="text-[#A1A1AA] font-mono text-sm">Authenticating...</p>
-      </div>
-    </div>
-  );
-};
-
 // App Router Component
 function AppRouter() {
-  const location = useLocation();
-
-  // Check URL fragment for session_id synchronously during render
-  if (location.hash?.includes('session_id=')) {
-    return <AuthCallback />;
-  }
-
   return (
     <Routes>
       <Route path="/" element={<Landing />} />

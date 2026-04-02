@@ -1,7 +1,14 @@
 import { useAuth } from "../App";
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
 import { 
   Cube, 
   ShieldCheck, 
@@ -10,16 +17,41 @@ import {
   ArrowRight,
   GitBranch
 } from "@phosphor-icons/react";
+import { toast } from "sonner";
 
 const Landing = () => {
-  const { user, loading, login } = useAuth();
+  const { user, loading, login, register } = useAuth();
   const navigate = useNavigate();
+  const [showAuth, setShowAuth] = useState(false);
+  const [isLogin, setIsLogin] = useState(true);
+  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!loading && user) {
       navigate('/dashboard');
     }
   }, [user, loading, navigate]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    try {
+      if (isLogin) {
+        await login(formData.email, formData.password);
+        toast.success('Welcome back!');
+      } else {
+        await register(formData.name, formData.email, formData.password);
+        toast.success('Account created!');
+      }
+      navigate('/dashboard');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Authentication failed');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const features = [
     {
@@ -124,16 +156,96 @@ const Landing = () => {
                 Launch Dashboard <ArrowRight size={20} />
               </Button>
               <Button
-                onClick={login}
+                onClick={() => setShowAuth(true)}
                 data-testid="hero-signin-btn"
                 variant="outline"
                 className="bg-transparent border border-[#1E2028] text-white px-8 py-6 text-lg hover:bg-[#1A1C23] transition-colors rounded-none"
               >
-                Sign In with Google
+                Sign In
               </Button>
             </div>
           </div>
         </section>
+
+        {/* Auth Dialog */}
+        <Dialog open={showAuth} onOpenChange={setShowAuth}>
+          <DialogContent className="bg-[#0A0B10] border-[#1E2028] text-white max-w-md">
+            <DialogHeader>
+              <DialogTitle className="font-heading text-xl text-center">
+                {isLogin ? 'Welcome Back' : 'Create Account'}
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+              {!isLogin && (
+                <div>
+                  <label className="text-xs uppercase tracking-widest text-[#A1A1AA] mb-2 block">
+                    Name
+                  </label>
+                  <Input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Your name"
+                    required={!isLogin}
+                    data-testid="auth-name-input"
+                    className="bg-[#050505] border-[#1E2028] text-white"
+                  />
+                </div>
+              )}
+              <div>
+                <label className="text-xs uppercase tracking-widest text-[#A1A1AA] mb-2 block">
+                  Email
+                </label>
+                <Input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="you@example.com"
+                  required
+                  data-testid="auth-email-input"
+                  className="bg-[#050505] border-[#1E2028] text-white"
+                />
+              </div>
+              <div>
+                <label className="text-xs uppercase tracking-widest text-[#A1A1AA] mb-2 block">
+                  Password
+                </label>
+                <Input
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="••••••••"
+                  required
+                  minLength={6}
+                  data-testid="auth-password-input"
+                  className="bg-[#050505] border-[#1E2028] text-white"
+                />
+              </div>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                data-testid="auth-submit-btn"
+                className="w-full bg-[#00F0FF] text-black font-semibold hover:bg-[#00F0FF]/80 rounded-none"
+              >
+                {isSubmitting ? (
+                  <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  isLogin ? 'Sign In' : 'Create Account'
+                )}
+              </Button>
+              <p className="text-center text-sm text-[#A1A1AA]">
+                {isLogin ? "Don't have an account? " : "Already have an account? "}
+                <button
+                  type="button"
+                  onClick={() => setIsLogin(!isLogin)}
+                  className="text-[#00F0FF] hover:underline"
+                >
+                  {isLogin ? 'Sign Up' : 'Sign In'}
+                </button>
+              </p>
+            </form>
+          </DialogContent>
+        </Dialog>
 
         {/* Live Entropy Preview */}
         <section className="py-16 border-t border-[#1E2028]">
